@@ -1,10 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using backend.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace backend.DatabaseContext
 {
@@ -14,5 +10,7 @@ namespace backend.DatabaseContext
         public ApplicationDbContext(DbContextOptions options) : base(options)
         {
         }
+
+        public DbSet<Flight> Flights { get; set; }
     }
 }
