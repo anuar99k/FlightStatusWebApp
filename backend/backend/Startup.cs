@@ -1,4 +1,5 @@
 using backend.DatabaseContext;
+using backend.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -32,6 +33,8 @@ namespace backend
                 options.Password.RequireDigit = true;
                 options.Password.RequiredLength = 5;
             }).AddEntityFrameworkStores<ApplicationDbContext>(); // configuring identity which database to use
+
+            services.AddScoped<IUserService, UserService>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
