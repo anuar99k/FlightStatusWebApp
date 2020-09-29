@@ -32,9 +32,12 @@ namespace backend
             {
                 options.Password.RequireDigit = true;
                 options.Password.RequiredLength = 5;
+                options.Password.RequireNonAlphanumeric = false;
             }).AddEntityFrameworkStores<ApplicationDbContext>(); // configuring identity which database to use
 
             services.AddScoped<IUserService, UserService>();
+
+            services.AddControllers();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -48,10 +51,7 @@ namespace backend
 
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("Hello World!");
-                });
+                endpoints.MapControllers();
             });
         }
     }

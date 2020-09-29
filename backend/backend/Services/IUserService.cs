@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace backend.Services
 {
     // users managing context
-    interface IUserService
+    public interface IUserService
     {
         Task<UserManagerResponse> RegisterUserAsync(RegisterViewModel registerViewModel);
     }
