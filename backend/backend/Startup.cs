@@ -1,11 +1,9 @@
 using backend.DatabaseContext;
 using backend.Services;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -14,7 +12,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace backend
 {
@@ -42,6 +39,8 @@ namespace backend
                 options.Password.RequireNonAlphanumeric = false;
             }).AddEntityFrameworkStores<ApplicationDbContext>(); // configuring identity which database to use
 
+            services.AddScoped<IUserService, UserService>(); // DI, creates single service object for each new request
+
             // authentication service config, registering JWT authentication
             services.AddAuthentication(auth =>
             {
@@ -53,15 +52,18 @@ namespace backend
                 {
                     ValidateIssuer = true,
                     ValidateAudience = true,
-                    ValidAudience = Configuration["AuthSettings:Audience"],
                     ValidIssuer = Configuration["AuthSettings:Issuer"],
+                    ValidAudience = Configuration["Clients:SpaAddress"],
                     RequireExpirationTime = true,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["AuthSettings:Key"])),
-                    ValidateIssuerSigningKey = true
+                    ValidateIssuerSigningKey = true,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.Zero
                 };
             });
 
-            services.AddScoped<IUserService, UserService>(); // DI, creates single service object for each new request
+            // enabling cross origin resource sharing for cookies, because server and SPA are running on different ports
+            services.AddCors();
 
             services.AddControllers();
         }
@@ -74,6 +76,31 @@ namespace backend
             }
 
             app.UseRouting();
+
+            // cross origin resource sharing configuration
+            app.UseCors(policy =>
+            {
+                policy.WithOrigins(Configuration["Clients:SpaAddress"])
+                      .AllowCredentials() // allowing XMLHttpRequest.withCredentials requests
+                      .AllowAnyMethod()
+                      .AllowAnyHeader();
+            });
+
+            app.UseCookiePolicy(new CookiePolicyOptions 
+            { 
+                HttpOnly = HttpOnlyPolicy.Always, // XSS protection, only server has access to cookies
+                //Secure = CookieSecurePolicy.Always // send cookies only through https
+            });
+
+            // check if cookies has token, if so, add it to header and proceed the pipeline
+            app.Use(async (context, next) =>
+            {
+                var token = context.Request.Cookies["Token"];
+                if (!string.IsNullOrEmpty(token))
+                    context.Request.Headers.Add("Authorization", "Bearer " + token);
+
+                await next();
+            });
 
             app.UseAuthentication();
 
