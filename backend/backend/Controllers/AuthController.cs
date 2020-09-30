@@ -1,6 +1,9 @@
 ﻿using backend.DataTransferObjects;
 using backend.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using System;
 using System.Threading.Tasks;
 
 namespace backend.Controllers
@@ -10,10 +13,12 @@ namespace backend.Controllers
     public class AuthController : ControllerBase
     {
         private IUserService _userService;
+        private IConfiguration _configuration;
 
-        public AuthController(IUserService userService)
+        public AuthController(IUserService userService, IConfiguration configuration)
         {
             _userService = userService;
+            _configuration = configuration;
         }
 
         // api/auth/register
@@ -38,12 +43,24 @@ namespace backend.Controllers
         {
             if (ModelState.IsValid)
             {
-                var result = await _userService.LoginUserAsync(loginViewModel);
+                UserManagerResponse loginResult = await _userService.LoginUserAsync(loginViewModel);
 
-                if (result.IsSuccess)
-                    return Ok(result);
+                if (loginResult.IsSuccess)
+                {
+                    // в случае успешной авторизации в DTO объекте loginResult поле message содержит токен.
+                    // сохранение токена в куках
+                    HttpContext.Response.Cookies.Append("Token", loginResult.Message,
+                        new CookieOptions
+                        {
+                            MaxAge = TimeSpan.FromMinutes(Convert.ToInt32(_configuration["AuthSettings:TokenLifeTimeInMinutes"]))
+                        });
 
-                return BadRequest(result);
+                    loginResult.Message = "Signed in successfully";
+
+                    return Ok(loginResult);
+                }
+
+                return BadRequest(loginResult);
             }
             return BadRequest("Some properties are not valid");
         }

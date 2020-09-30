@@ -102,9 +102,9 @@ namespace backend.Services
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["AuthSettings:Issuer"],
-                audience: _configuration["AuthSettings:Audience"],
+                audience: _configuration["Clients:SpaAddress"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(2),
+                expires: DateTime.Now.AddMinutes(Convert.ToInt32(_configuration["AuthSettings:TokenLifeTimeInMinutes"])),
                 signingCredentials: new SigningCredentials(encryptionKey, SecurityAlgorithms.HmacSha256));
 
             string tokenAsString = new JwtSecurityTokenHandler().WriteToken(token); 
