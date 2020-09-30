@@ -10,6 +10,7 @@ namespace backend.Services
     public interface IUserService
     {
         Task<UserManagerResponse> RegisterUserAsync(RegisterViewModel registerViewModel);
+        Task<UserManagerResponse> LoginUserAsync(LoginViewModel loginViewModel);
     }
 
     public class UserService : IUserService
@@ -20,6 +21,7 @@ namespace backend.Services
         {
             _userManager = userManager;
         }
+
         public async Task<UserManagerResponse> RegisterUserAsync(RegisterViewModel registerViewModel)
         {
             if (registerViewModel == null)
@@ -57,7 +59,37 @@ namespace backend.Services
                 IsSuccess = false,
                 Errors = result.Errors.Select(e => e.Description)
             };
+        }
 
+        public async Task<UserManagerResponse> LoginUserAsync(LoginViewModel loginViewModel)
+        {
+            IdentityUser user = await _userManager.FindByEmailAsync(loginViewModel.Email);
+
+            if (user == null)
+            {
+                return new UserManagerResponse
+                {
+                    Message = "There is no user with that email address",
+                    IsSuccess = false
+                };
+            }
+
+            bool passwordIsValid = await _userManager.CheckPasswordAsync(user, loginViewModel.Password);
+
+            if (!passwordIsValid)
+            {
+                return new UserManagerResponse
+                {
+                    Message = "Invalid password",
+                    IsSuccess = false
+                };
+            }
+
+            return new UserManagerResponse
+            {
+                Message = "Signed in successfully",
+                IsSuccess = true
+            };
         }
     }
 }

@@ -31,5 +31,21 @@ namespace backend.Controllers
             }
             return BadRequest("Some properties are not valid");
         }
+        
+        // api/auth/login
+        [HttpPost("login")]
+        public async Task<IActionResult> LoginAsync([FromBody]LoginViewModel loginViewModel)
+        {
+            if (ModelState.IsValid)
+            {
+                var result = await _userService.LoginUserAsync(loginViewModel);
+
+                if (result.IsSuccess)
+                    return Ok(result);
+
+                return BadRequest(result);
+            }
+            return BadRequest("Some properties are not valid");
+        }
     }
 }
