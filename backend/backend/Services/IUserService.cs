@@ -1,7 +1,12 @@
 ﻿using backend.DataTransferObjects;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace backend.Services
@@ -16,10 +21,12 @@ namespace backend.Services
     public class UserService : IUserService
     {
         private UserManager<IdentityUser> _userManager;
+        private IConfiguration _configuration;
 
-        public UserService(UserManager<IdentityUser> userManager)
+        public UserService(UserManager<IdentityUser> userManager, IConfiguration configuration)
         {
             _userManager = userManager;
+            _configuration = configuration;
         }
 
         public async Task<UserManagerResponse> RegisterUserAsync(RegisterViewModel registerViewModel)
@@ -85,10 +92,28 @@ namespace backend.Services
                 };
             }
 
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
+            };
+
+            var encryptionKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["AuthSettings:Key"]));
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["AuthSettings:Issuer"],
+                audience: _configuration["AuthSettings:Audience"],
+                claims: claims,
+                expires: DateTime.Now.AddHours(2),
+                signingCredentials: new SigningCredentials(encryptionKey, SecurityAlgorithms.HmacSha256));
+
+            string tokenAsString = new JwtSecurityTokenHandler().WriteToken(token); 
+
             return new UserManagerResponse
             {
-                Message = "Signed in successfully",
-                IsSuccess = true
+                Message = tokenAsString,
+                IsSuccess = true,
+                ExpireDateTime = token.ValidTo
             };
         }
     }
