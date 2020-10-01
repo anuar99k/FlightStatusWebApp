@@ -45,8 +45,8 @@ namespace backend.Services
 
             var identityUser = new IdentityUser
             {
-                Email = registerViewModel.Email,
-                UserName = registerViewModel.Email
+                UserName = registerViewModel.Username,
+                Email = registerViewModel.Username
             };
 
             var result = await _userManager.CreateAsync(identityUser, registerViewModel.Password);
@@ -70,13 +70,13 @@ namespace backend.Services
 
         public async Task<UserManagerResponse> LoginUserAsync(LoginViewModel loginViewModel)
         {
-            IdentityUser user = await _userManager.FindByEmailAsync(loginViewModel.Email);
+            IdentityUser user = await _userManager.FindByNameAsync(loginViewModel.Username);
 
             if (user == null)
             {
                 return new UserManagerResponse
                 {
-                    Message = "There is no user with that email address",
+                    Message = "There is no user with that username",
                     IsSuccess = false
                 };
             }
@@ -94,7 +94,7 @@ namespace backend.Services
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Name, user.UserName),
                 new Claim(ClaimTypes.NameIdentifier, user.Id)
             };
 
