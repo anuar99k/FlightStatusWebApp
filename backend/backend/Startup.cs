@@ -22,7 +22,7 @@ namespace backend
             Configuration = configuration;
         }
         public IConfiguration Configuration { get; }
-        
+
         public void ConfigureServices(IServiceCollection services)
         {
             // configuring entityFrameworkCore with sql server
@@ -62,8 +62,16 @@ namespace backend
                 };
             });
 
-            // enabling cross origin resource sharing for cookies, because server and SPA are running on different ports
-            services.AddCors();
+            // enabling and configuring cross origin resource sharing for cookies, because server and SPA are running on different ports
+            services.AddCors(options => {
+                options.AddPolicy("AllowOrigin", corsPolicyBuilder => 
+                {
+                    corsPolicyBuilder.WithOrigins(Configuration["Clients:SpaAddress"])
+                                     .AllowCredentials() // allowing XMLHttpRequest.withCredentials requests
+                                     .AllowAnyMethod()
+                                     .AllowAnyHeader();
+                });
+            });
 
             services.AddControllers();
         }
@@ -77,14 +85,7 @@ namespace backend
 
             app.UseRouting();
 
-            // cross origin resource sharing configuration
-            app.UseCors(policy =>
-            {
-                policy.WithOrigins(Configuration["Clients:SpaAddress"])
-                      .AllowCredentials() // allowing XMLHttpRequest.withCredentials requests
-                      .AllowAnyMethod()
-                      .AllowAnyHeader();
-            });
+            app.UseCors("AllowOrigin");
 
             app.UseCookiePolicy(new CookiePolicyOptions 
             { 
