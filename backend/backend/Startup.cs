@@ -37,7 +37,8 @@ namespace backend
                 options.Password.RequireDigit = true;
                 options.Password.RequiredLength = 5;
                 options.Password.RequireNonAlphanumeric = false;
-            }).AddEntityFrameworkStores<ApplicationDbContext>(); // configuring identity which database to use
+            }).AddEntityFrameworkStores<ApplicationDbContext>() // configuring identity which database to use
+              .AddErrorDescriber<RussianIdentityErrorDescriber>();
 
             services.AddScoped<IUserService, UserService>(); // DI, creates single service object for each new request
 
