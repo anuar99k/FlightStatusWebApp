@@ -43,20 +43,23 @@ namespace backend.Services
                 };
             }
 
-            var identityUser = new IdentityUser
-            {
-                UserName = registerViewModel.Username,
-                Email = registerViewModel.Username
-            };
+            var identityUser = new IdentityUser { UserName = registerViewModel.Username };
 
             var result = await _userManager.CreateAsync(identityUser, registerViewModel.Password);
-
+            
             if (result.Succeeded)
             {
+                IdentityUser user = await _userManager.FindByNameAsync(registerViewModel.Username);
+
+                JwtSecurityToken token = GetToken(user);
+
+                string tokenAsString = new JwtSecurityTokenHandler().WriteToken(token);
+
                 return new UserManagerResponse
                 {
-                    Message = "User created successfully",
-                    IsSuccess = true
+                    Message = tokenAsString,
+                    IsSuccess = true,
+                    ExpireDateTime = token.ValidTo
                 };
             }
 
@@ -92,6 +95,20 @@ namespace backend.Services
                 };
             }
 
+            JwtSecurityToken token = GetToken(user);
+
+            string tokenAsString = new JwtSecurityTokenHandler().WriteToken(token); 
+
+            return new UserManagerResponse
+            {
+                Message = tokenAsString,
+                IsSuccess = true,
+                ExpireDateTime = token.ValidTo
+            };
+        }
+
+        private JwtSecurityToken GetToken(IdentityUser user)
+        {
             var claims = new[]
             {
                 new Claim(ClaimTypes.Name, user.UserName),
@@ -107,14 +124,7 @@ namespace backend.Services
                 expires: DateTime.Now.AddMinutes(Convert.ToInt32(_configuration["AuthSettings:TokenLifeTimeInMinutes"])),
                 signingCredentials: new SigningCredentials(encryptionKey, SecurityAlgorithms.HmacSha256));
 
-            string tokenAsString = new JwtSecurityTokenHandler().WriteToken(token); 
-
-            return new UserManagerResponse
-            {
-                Message = tokenAsString,
-                IsSuccess = true,
-                ExpireDateTime = token.ValidTo
-            };
+            return token;
         }
     }
 }

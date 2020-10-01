@@ -27,16 +27,22 @@ namespace backend.Controllers
         {
             if (ModelState.IsValid)
             {
-                var result = await _userService.RegisterUserAsync(registerViewModel);
+                var registrationResult = await _userService.RegisterUserAsync(registerViewModel);
 
-                if (result.IsSuccess)
-                    return Ok(result);
+                if (registrationResult.IsSuccess)
+                {
+                    // в случае успешной регистрации в DTO объекте registrationResult поле message содержит токен.
+                    // сохранение токена в куках
+                    SetTokenInCookies(registrationResult.Message);
 
-                return BadRequest(result);
+                    return Ok(registrationResult);
+                }
+
+                return BadRequest(registrationResult);
             }
             return BadRequest("Some properties are not valid");
         }
-        
+
         // api/auth/login
         [HttpPost("login")]
         public async Task<IActionResult> LoginAsync([FromBody]LoginViewModel loginViewModel)
@@ -49,11 +55,7 @@ namespace backend.Controllers
                 {
                     // в случае успешной авторизации в DTO объекте loginResult поле message содержит токен.
                     // сохранение токена в куках
-                    HttpContext.Response.Cookies.Append("Token", loginResult.Message,
-                        new CookieOptions
-                        {
-                            MaxAge = TimeSpan.FromMinutes(Convert.ToInt32(_configuration["AuthSettings:TokenLifeTimeInMinutes"]))
-                        });
+                    SetTokenInCookies(loginResult.Message);
 
                     loginResult.Message = "Signed in successfully";
 
@@ -63,6 +65,14 @@ namespace backend.Controllers
                 return BadRequest(loginResult);
             }
             return BadRequest("Some properties are not valid");
+        }
+        private void SetTokenInCookies(string token)
+        {
+            HttpContext.Response.Cookies.Append("Token", token,
+                new CookieOptions
+                {
+                    MaxAge = TimeSpan.FromMinutes(Convert.ToInt32(_configuration["AuthSettings:TokenLifeTimeInMinutes"]))
+                });
         }
     }
 }
