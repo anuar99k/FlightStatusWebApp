@@ -17,6 +17,6 @@ namespace backend.Models
 
         [Required]
         public string ArrivalCity { get; set; }
-        public TimeSpan? DelayTime { get; set; }
+        public string DelayInfo { get; set; }
     }
 }
