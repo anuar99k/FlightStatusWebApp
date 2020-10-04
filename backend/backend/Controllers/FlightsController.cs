@@ -37,7 +37,7 @@ namespace backend.Controllers
 
         // PUT: api/flights/{id}
         [Authorize]
-        [HttpPut]
+        [HttpPut("{id}")]
         public async Task<IActionResult> PutFlight(int id, Flight flight)
         {
             if (id != flight.FlightId)
